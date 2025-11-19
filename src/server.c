@@ -95,6 +95,11 @@ session_t *find_session(const char *name)
 void *handle_client(void *arg) 
 {
     int client_fd = *(int*)arg;
+
+    char username[64] = {0};
+    char selected_genre[32] = {0}; 
+    session_t *current_session = NULL;
+
     char buffer[BUFFER_SIZE];
 
     while(1)
@@ -133,6 +138,66 @@ void *handle_client(void *arg)
                 char *reply = "Exiting current story.";
                 send(client_fd, reply, strlen(reply), 0);
                 break;
+            }
+
+            else if (strncmp(buffer, "GENRE ", 6) == 0)
+            {
+                char genre_buffer[64];
+                strncpy(genre_buffer, buffer + 6, sizeof(genre_buffer) - 1);
+                genre_buffer[sizeof(genre_buffer)-1] = '\0';
+
+                // Trim newline
+                genre_buffer[strcspn(genre_buffer, "\r\n")] = '\0';
+
+                if(username[0] == '\0')
+                {
+                    char *reply = "ERROR; You must JOIN before choosing a genre.";
+                    send(client_fd, reply, strlen(reply), 0);
+                    continue;
+                }
+            }
+
+            else if (strncmp(buffer, "SESSION ", 8) == 0)
+            {
+                char session_name[64];
+                strncpy(session_name, buffer + 8, sizeof(session_name) - 1);
+                session_name[sizeof(session_name)-1] = '\0';
+
+                // Trim newline
+                session_name[strcspn(session_name, "\r\n")] = '\0';
+
+                if(username[0] == '\0')
+                {
+                    char *reply = "ERROR; You must JOIN before attempting to create a session.";
+                    send(client_fd, reply, strlen(reply), 0);
+                    continue;
+                }
+
+                if(selected_genre[0] == '\0')
+                {
+                    char *reply = "ERROR; You must choose a GENRE before attempting to create a session.";
+                    send(client_fd, reply, strlen(reply), 0);
+                    continue;
+                }
+
+                session_t *new_session = create_session(session_name, selected_genre);
+
+                if(new_session == NULL)
+                {
+                    char *reply = "ERROR; Session name already exists.";
+                    send(client_fd, reply, strlen(reply), 0);
+                    continue;
+                }
+
+                pthread_mutex_lock(&new_session->lock);
+                current_session = new_session;
+                new_session->participant_count += 1;
+                pthread_mutex_unlock(&new_session->lock);
+
+                char reply[128];
+                snprintf(reply, sizeof(reply), "SESSION CREATED: %s", session_name);
+                send(client_fd, reply, strlen(reply), 0);
+                continue;
             }
         }
     }
