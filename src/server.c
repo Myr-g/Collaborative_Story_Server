@@ -187,10 +187,10 @@ void *handle_client(void *arg)
                 }
             }
 
-            else if (strncmp(buffer, "SESSION ", 8) == 0)
+            else if (strncmp(buffer, "SESSION CREATE ", 15) == 0)
             {
                 char session_name[64];
-                strncpy(session_name, buffer + 8, sizeof(session_name) - 1);
+                strncpy(session_name, buffer + 15, sizeof(session_name) - 1);
                 session_name[sizeof(session_name)-1] = '\0';
 
                 // Trim newline
@@ -230,6 +230,40 @@ void *handle_client(void *arg)
                 continue;
             }
 
+            else if(strncmp(buffer, "SESSION JOIN ", 13) == 0)
+            {
+                char session_name[64];
+                strncpy(session_name, buffer + 13, sizeof(session_name) - 1);
+                session_name[sizeof(session_name)-1] = '\0';
+
+                // Trim newline
+                session_name[strcspn(session_name, "\r\n")] = '\0';
+
+                // Check if session name already exists
+                session_t *current = find_session(session_name);
+
+                if(current == NULL)
+                {
+                    char reply[128];
+                    snprintf(reply, sizeof(reply), "ERROR; SESSION '%s' does not exist.\n", session_name);
+                    send(client_fd, reply, strlen(reply), 0);
+                    continue;
+                }
+
+                else
+                {
+                    pthread_mutex_lock(&current->lock);
+                    current_session = current;
+                    current->participant_count += 1;
+                    pthread_mutex_unlock(&current->lock);
+
+                    char reply[128];
+                    snprintf(reply, sizeof(reply), "JOINED SESSION: '%s'.\n", session_name);
+                    send(client_fd, reply, strlen(reply), 0);
+                    continue;
+                }
+            }
+
             else if(strncmp(buffer, "VIEW", 4) == 0)
             {
                 pthread_mutex_lock(&story_lock);
@@ -252,7 +286,7 @@ void *handle_client(void *arg)
 
             else if(strncmp(buffer, "QUIT", 4) == 0)
             {
-                char *reply = "Goodbye.\n";
+                char *reply = "Goodbye.";
                 send(client_fd, reply, strlen(reply), 0);
                 break;
             }
