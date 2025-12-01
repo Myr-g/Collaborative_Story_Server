@@ -124,7 +124,26 @@ void *handle_client(void *arg)
 
         else
         {
-            if (strncmp(buffer, "JOIN ", 5) == 0)
+            if(strncmp(buffer, "HELP", 4) == 0)
+            {
+                char *reply = "Out of Session:\n"
+                "  JOIN <username>           - Registers your username with the server.\n"
+                "  GENRE <genre>             - Selects the story genre (or use GENRE RANDOM).\n"
+                "  SESSION CREATE <name>     - Creates a new collaborative writing session.\n"
+                "  SESSION JOIN <name>       - Joins an existing session.\n"
+                "  LIST SESSIONS             - Lists all active sessions.\n"
+                "  QUIT                      - Disconnects from the server.\n"
+                "\n"
+                "In Session:\n"
+                "  VIEW                      - Displays the current story.\n"
+                "  WRITE <text>              - Adds text to the shared story.\n"
+                "  EXIT SESSION              - Leaves the current session.\n\n";
+
+                send(client_fd, reply, strlen(reply), 0);
+                continue;
+            }
+
+            else if(strncmp(buffer, "JOIN ", 5) == 0)
             {
                 char name_buffer[64];
                 strncpy(name_buffer, buffer + 5, sizeof(name_buffer) - 1);
@@ -159,7 +178,7 @@ void *handle_client(void *arg)
                 }
             }
 
-            else if (strncmp(buffer, "GENRE ", 6) == 0)
+            else if(strncmp(buffer, "GENRE ", 6) == 0)
             {
                 char genre_buffer[64];
                 strncpy(genre_buffer, buffer + 6, sizeof(genre_buffer) - 1);
@@ -198,7 +217,7 @@ void *handle_client(void *arg)
                 }
             }
 
-            else if (strncmp(buffer, "SESSION CREATE ", 15) == 0)
+            else if(strncmp(buffer, "SESSION CREATE ", 15) == 0)
             {
                 char session_name[64];
                 strncpy(session_name, buffer + 15, sizeof(session_name) - 1);
@@ -281,7 +300,7 @@ void *handle_client(void *arg)
                 }
             }
 
-            else if (strncmp(buffer, "LIST SESSIONS", 13) == 0)
+            else if(strncmp(buffer, "LIST SESSIONS", 13) == 0)
             {
                 pthread_mutex_lock(&sessions_lock);
 
@@ -333,6 +352,13 @@ void *handle_client(void *arg)
 
                 pthread_mutex_lock(&current_session->lock);
                 strcat(current_session->story, story_copy);
+
+                if(current_session->log_fp != NULL)
+                {
+                    fprintf(current_session->log_fp, "<%s>: %s", username, story_copy);
+                    fflush(current_session->log_fp);
+                }
+
                 pthread_mutex_unlock(&current_session->lock);
 
                 char *reply = "Story updated.\n";
