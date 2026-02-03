@@ -19,6 +19,19 @@ typedef struct session
     struct session *next;
 } session_t;
 
+typedef struct genre
+{
+    char name[64];
+    char prompt[200];
+} genre_t;
+
+typedef struct genre_list
+{
+    genre_t *data;
+    int count;
+    int capacity;
+} genre_list_t;
+
 session_t *sessions_head = NULL;
 pthread_mutex_t sessions_lock = PTHREAD_MUTEX_INITIALIZER;
 
