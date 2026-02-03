@@ -8,17 +8,6 @@
 #define PORT 8080
 #define BUFFER_SIZE 1024
 
-typedef struct session
-{
-    char name[64];
-    char genre[32];
-    char story[20000];
-    pthread_mutex_t lock;
-    FILE *log_fp;
-    int participant_count;
-    struct session *next;
-} session_t;
-
 typedef struct genre
 {
     char name[64];
@@ -32,8 +21,92 @@ typedef struct genre_list
     int capacity;
 } genre_list_t;
 
+typedef struct session
+{
+    char name[64];
+    char genre[32];
+    char story[20000];
+    pthread_mutex_t lock;
+    FILE *log_fp;
+    int participant_count;
+    struct session *next;
+} session_t;
+
+genre_list_t genre_list;
 session_t *sessions_head = NULL;
 pthread_mutex_t sessions_lock = PTHREAD_MUTEX_INITIALIZER;
+
+void load_genres()
+{
+    genre_list.count = 0;
+    genre_list.capacity = 16;
+    genre_list.data = malloc(sizeof(genre_t) * genre_list.capacity);
+
+    FILE *file = fopen("genres.txt", "r");
+    if (!file)
+    {
+        fprintf(stderr, "Error: genres.txt not found.\n");
+        exit(1);
+    }
+
+    char line[1024];
+
+    while (fgets(line, sizeof(line), file))
+    {
+        line[strcspn(line, "\n")] = '\0';
+
+        char *delimiter = strchr(line, '|');
+
+        if(delimiter == NULL)
+        {
+            fprintf(stderr, "Error: malformed line in file.\n");
+            exit(1);
+
+        }
+        *delimiter = '\0';
+        char *name = line;
+        char *prompt = delimiter + 1;
+
+        if(genre_list.count >= genre_list.capacity)
+        {
+            genre_list.capacity *= 2;
+            genre_list.data = realloc(genre_list.data, sizeof(genre_t) * genre_list.capacity);
+        }
+
+        genre_t *genre = &genre_list.data[genre_list.count++];
+
+        if(name[0] == '\0')
+        {
+            fprintf(stderr, "Error: no associated genre for prompt '%s'.\n", prompt);
+            exit(1);
+
+        }
+
+        strncpy(genre->name, name, sizeof(genre->name) - 1);
+        genre->name[sizeof(genre->name) - 1] = '\0';
+
+        if(prompt[0] == '\0')
+        {
+            snprintf(genre->prompt, sizeof(genre->prompt), "You may begin writing a %s story.", genre->name);
+        }
+
+        else
+        {
+            strncpy(genre->prompt, prompt, sizeof(genre->prompt) - 1);
+        }
+
+        genre->prompt[sizeof(genre->prompt) - 1] = '\0';
+    }
+
+    if(genre_list.count == 0)
+    {
+        fprintf(stderr, "Error: genres.txt is empty.\n");
+        exit(1);
+    }
+
+    fclose(file);
+}
+
 
 session_t *create_session(const char *name, const char *genre)
 {
@@ -430,6 +503,8 @@ int main()
     struct sockaddr_in address;
     int addrlen = sizeof(address);
     char buffer[BUFFER_SIZE];
+
+    load_genres();
 
     // Create socket
     if((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 

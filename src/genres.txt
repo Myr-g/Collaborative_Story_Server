@@ -1,0 +1,5 @@
+fantasy|A collaborative fantasy story. Maintain magic consistency and world lore.
+horror|A tense horror story focused on atmosphere and psychological dread.
+sci-fi|A science fiction narrative grounded in speculative technology.
+mystery|A mystery story where clues must be logically consistent.
+romance|A character-driven romance focusing on emotional development.
