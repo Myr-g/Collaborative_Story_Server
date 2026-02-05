@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <pthread.h>
@@ -24,7 +25,7 @@ typedef struct genre_list
 typedef struct session
 {
     char name[64];
-    char genre[32];
+    genre_t *genre;
     char story[20000];
     pthread_mutex_t lock;
     FILE *log_fp;
@@ -35,6 +36,7 @@ typedef struct session
 genre_list_t genre_list;
 session_t *sessions_head = NULL;
 pthread_mutex_t sessions_lock = PTHREAD_MUTEX_INITIALIZER;
+srand(time(NULL));
 
 void load_genres()
 {
@@ -107,8 +109,7 @@ void load_genres()
     fclose(file);
 }
 
-
-session_t *create_session(const char *name, const char *genre)
+session_t *create_session(const char *name, genre_t *genre)
 {
     pthread_mutex_lock(&sessions_lock);
 
@@ -139,9 +140,7 @@ session_t *create_session(const char *name, const char *genre)
     strncpy(new_session->name, name, sizeof(new_session->name) - 1);
     new_session->name[sizeof(new_session->name) - 1] = '\0';
 
-    strncpy(new_session->genre, genre, sizeof(new_session->genre) - 1);
-    new_session->genre[sizeof(new_session->genre) - 1] = '\0';
-
+    new_session->genre = genre;
     new_session->story[0] = '\0';
     new_session->participant_count = 0;
     new_session->log_fp = NULL;
@@ -194,7 +193,7 @@ void *handle_client(void *arg)
     int client_fd = *(int*)arg;
 
     char username[64] = {0};
-    char selected_genre[32] = {0}; 
+    genre_t *selected_genre = NULL;
     session_t *current_session = NULL;
 
     char buffer[BUFFER_SIZE];
@@ -214,8 +213,7 @@ void *handle_client(void *arg)
             {
                 char *reply = "Out of Session:\n"
                 "  JOIN <username>           - Registers your username with the server.\n"
-                "  GENRE <genre>             - Selects the story genre (or use GENRE RANDOM).\n"
-                "  SESSION CREATE <name>     - Creates a new collaborative writing session.\n"
+                "  SESSION CREATE <name> <genre>     - Creates a new collaborative writing session with the chosen genre.\n"
                 "  SESSION JOIN <name>       - Joins an existing session.\n"
                 "  LIST SESSIONS             - Lists all active sessions.\n"
                 "  QUIT                      - Disconnects from the server.\n"
@@ -264,54 +262,55 @@ void *handle_client(void *arg)
                 }
             }
 
-            else if(strncmp(buffer, "GENRE ", 6) == 0)
-            {
-                char genre_buffer[64];
-                strncpy(genre_buffer, buffer + 6, sizeof(genre_buffer) - 1);
-                genre_buffer[sizeof(genre_buffer)-1] = '\0';
-
-                // Trim newline
-                genre_buffer[strcspn(genre_buffer, "\r\n")] = '\0';
-
-                if(username[0] == '\0')
-                {
-                    char *reply = "ERROR; You must JOIN before choosing a genre.\n";
-                    send(client_fd, reply, strlen(reply), 0);
-                    continue;
-                }
-
-                if(strncmp(genre_buffer, "RANDOM", 6) == 0)
-                {
-                    strncpy(selected_genre, "fantasy", sizeof(selected_genre) - 1);
-                    selected_genre[sizeof(selected_genre) - 1] = '\0';
-
-                    char reply[128];
-                    snprintf(reply, sizeof(reply), "GENRE SET: %s\n", selected_genre);
-                    send(client_fd, reply, strlen(reply), 0);
-                    continue;
-                }
-
-                else
-                {
-                    strncpy(selected_genre, genre_buffer, sizeof(selected_genre) - 1);
-                    selected_genre[sizeof(selected_genre) - 1] = '\0';
-
-                    char reply[128];
-                    snprintf(reply, sizeof(reply), "GENRE SET: %s\n", selected_genre);
-                    send(client_fd, reply, strlen(reply), 0);
-                    continue;
-                }
-            }
-
             else if(strncmp(buffer, "SESSION CREATE ", 15) == 0)
             {
-                char session_name[64];
-                strncpy(session_name, buffer + 15, sizeof(session_name) - 1);
-                session_name[sizeof(session_name)-1] = '\0';
+                if(current_session != NULL)
+                {
+                    char *reply = "ERROR; You are already in a session.\n";
+                    send(client_fd, reply, strlen(reply), 0);
+                    continue; 
+                }
+
+                char session_buffer[128];
+                strncpy(session_buffer, buffer + 15, sizeof(session_buffer) - 1);
+                session_buffer[sizeof(session_buffer)-1] = '\0';
 
                 // Trim newline
-                session_name[strcspn(session_name, "\r\n")] = '\0';
+                session_buffer[strcspn(session_buffer, "\r\n")] = '\0';
 
+                char session_name[64];
+                char genre_name[64];
+
+                // Tokenize
+                char *t = strtok(session_buffer, " \t\n\r");
+                if(t)
+                { 
+                    strncpy(session_name, t, sizeof(session_name) - 1); 
+                    session_name[sizeof(session_name) - 1] = '\0'; 
+                }
+
+                else 
+                { 
+                    char *reply = "ERROR; Missing session name.\n";
+                    send(client_fd, reply, strlen(reply), 0);
+                    continue; 
+                }
+
+                t = strtok(NULL, " \t\n\r");
+                if(t) 
+                { 
+                    strncpy(genre_name, t, sizeof(genre_name) - 1); 
+                    genre_name[sizeof(genre_name) - 1] = '\0'; 
+                }
+
+                else 
+                { 
+                    char *reply = "ERROR; Missing genre.\n";
+                    send(client_fd, reply, strlen(reply), 0);
+                    continue; 
+                }
+
+                // Check if user has registered themselves
                 if(username[0] == '\0')
                 {
                     char *reply = "ERROR; You must JOIN before attempting to create a session.\n";
@@ -319,11 +318,33 @@ void *handle_client(void *arg)
                     continue;
                 }
 
-                if(selected_genre[0] == '\0')
+                if(strcmp(genre_name, "RANDOM") != 0)
                 {
-                    char *reply = "ERROR; You must choose a GENRE before attempting to create a session.\n";
-                    send(client_fd, reply, strlen(reply), 0);
-                    continue;
+                    // Check if the user has chosen a valid genre
+                    int valid_genre = 0;
+
+                    for(int i = 0; i < genre_list.count; i++)
+                    {
+                        if(strcasecmp(genre_list.data[i].name, genre_name) == 0)
+                        {
+                            valid_genre = 1;
+                            selected_genre = &genre_list.data[i];
+                            break;
+                        }
+                    }
+
+                    if(!valid_genre)
+                    {
+                        char *reply = "ERROR; Invalid genre.\n";
+                        send(client_fd, reply, strlen(reply), 0);
+                        continue;
+                    }
+                }
+
+                else
+                {
+                    int rand_index = rand() % genre_list.count;
+                    selected_genre = &genre_list.data[rand_index];
                 }
 
                 session_t *new_session = create_session(session_name, selected_genre);
@@ -341,13 +362,25 @@ void *handle_client(void *arg)
                 pthread_mutex_unlock(&new_session->lock);
 
                 char reply[128];
-                snprintf(reply, sizeof(reply), "SESSION CREATED: %s\n", session_name);
+                snprintf(reply, sizeof(reply), "SESSION CREATED: %s\nGENRE: %s", session_name, new_session->genre->name);
                 send(client_fd, reply, strlen(reply), 0);
+
+                char prompt[200];
+                snprintf(prompt, sizeof(prompt), "%s\n", new_session->genre->prompt);
+                send(client_fd, prompt, strlen(prompt), 0);
+
                 continue;
             }
 
             else if(strncmp(buffer, "SESSION JOIN ", 13) == 0)
             {
+                if(current_session != NULL)
+                {
+                    char *reply = "ERROR; You are already in a session.\n";
+                    send(client_fd, reply, strlen(reply), 0);
+                    continue; 
+                }
+                
                 char session_name[64];
                 strncpy(session_name, buffer + 13, sizeof(session_name) - 1);
                 session_name[sizeof(session_name)-1] = '\0';
@@ -380,8 +413,13 @@ void *handle_client(void *arg)
                     pthread_mutex_unlock(&current->lock);
 
                     char reply[128];
-                    snprintf(reply, sizeof(reply), "JOINED SESSION: '%s'.\n", session_name);
+                    snprintf(reply, sizeof(reply), "JOINED SESSION: '%s'.\nGENRE: %s", session_name, current_session->genre->name);
                     send(client_fd, reply, strlen(reply), 0);
+
+                    char prompt[200];
+                    snprintf(prompt, sizeof(prompt), "%s\n", current_session->genre->prompt);
+                    send(client_fd, prompt, strlen(prompt), 0);
+
                     continue;
                 }
             }
