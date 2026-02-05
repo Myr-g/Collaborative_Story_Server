@@ -361,7 +361,7 @@ void *handle_client(void *arg)
                 pthread_mutex_unlock(&new_session->lock);
 
                 char reply[128];
-                snprintf(reply, sizeof(reply), "SESSION CREATED: %s\nGENRE: %s", session_name, new_session->genre->name);
+                snprintf(reply, sizeof(reply), "SESSION CREATED: %s\nGENRE: %s\n", session_name, new_session->genre->name);
                 send(client_fd, reply, strlen(reply), 0);
 
                 char prompt[200];
@@ -412,7 +412,7 @@ void *handle_client(void *arg)
                     pthread_mutex_unlock(&current->lock);
 
                     char reply[128];
-                    snprintf(reply, sizeof(reply), "JOINED SESSION: '%s'.\nGENRE: %s", session_name, current_session->genre->name);
+                    snprintf(reply, sizeof(reply), "JOINED SESSION: '%s'.\nGENRE: %s\n", session_name, current_session->genre->name);
                     send(client_fd, reply, strlen(reply), 0);
 
                     char prompt[200];
