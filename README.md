@@ -27,9 +27,8 @@ gcc -o client src/client/*.c
 ### Commands
 JOIN <username>           - Registers your username with the server
 
-GENRE <genre>             - Selects the story genre (or use GENRE RANDOM)
 
-SESSION CREATE <name>     - Creates a new collaborative writing session
+SESSION CREATE <name> <genre|RANDOM>    - Creates a new collaborative writing session witht the chosen genre
 
 SESSION JOIN <name>       - Joins an existing session
 
