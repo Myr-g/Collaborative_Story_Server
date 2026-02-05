@@ -22,6 +22,13 @@ typedef struct genre_list
     int capacity;
 } genre_list_t;
 
+typedef struct session_client
+{
+    int fd;
+    char username[64];
+    struct session_client *next;
+} session_client_t;
+
 typedef struct session
 {
     char name[64];
@@ -30,6 +37,7 @@ typedef struct session
     pthread_mutex_t lock;
     FILE *log_fp;
     int participant_count;
+    session_client_t *clients;
     struct session *next;
 } session_t;
 
@@ -406,8 +414,27 @@ void *handle_client(void *arg)
                 }
 
                 pthread_mutex_lock(&new_session->lock);
+
                 current_session = new_session;
+                session_client_t *new_client = malloc(sizeof(session_client_t));
+
+                if (new_client == NULL)
+                {
+                    pthread_mutex_unlock(&new_session->lock);
+                    char *reply = "ERROR; Server memory allocation failed.\n";
+                    send(client_fd, reply, strlen(reply), 0);
+                    continue;
+                }
+
+                new_client->fd = client_fd;
+                strncpy(new_client->username, username, sizeof(new_client->username) - 1);
+                new_client->username[sizeof(new_client->username) - 1] = '\0';
+
+                new_client->next = new_session->clients;
+                new_session->clients = new_client;
+                
                 new_session->participant_count += 1;
+
                 pthread_mutex_unlock(&new_session->lock);
 
                 char reply[128];
@@ -458,6 +485,24 @@ void *handle_client(void *arg)
                 {
                     pthread_mutex_lock(&current->lock);
                     current_session = current;
+
+                    session_client_t *new_client = malloc(sizeof(session_client_t));
+
+                    if (new_client == NULL)
+                    {
+                        pthread_mutex_unlock(&current->lock);
+                        char *reply = "ERROR; Server memory allocation failed.\n";
+                        send(client_fd, reply, strlen(reply), 0);
+                        continue;
+                    }
+
+                    new_client->fd = client_fd;
+                    strncpy(new_client->username, username, sizeof(new_client->username) - 1);
+                    new_client->username[sizeof(new_client->username) - 1] = '\0';
+
+                    new_client->next = new_session->clients;
+                    new_session->clients = new_client;
+                
                     current->participant_count += 1;
                     pthread_mutex_unlock(&current->lock);
 
@@ -538,7 +583,11 @@ void *handle_client(void *arg)
                 char story_copy[10000] = {0};
                 strcpy(story_copy, buffer + 6);
 
+                int fds[64];
+                int fd_count = 0;
+
                 pthread_mutex_lock(&current_session->lock);
+
                 strcat(current_session->story, story_copy);
 
                 if(current_session->log_fp != NULL)
@@ -547,10 +596,26 @@ void *handle_client(void *arg)
                     fflush(current_session->log_fp);
                 }
 
+                session_client_t *sc = current_session->clients;
+
+                while (sc != NULL && fd_count < 64)
+                {
+                    fds[fd_count++] = sc->fd;
+                    sc = sc->next;
+                }
+
                 pthread_mutex_unlock(&current_session->lock);
 
-                char *reply = "Story updated.\n";
-                send(client_fd, reply, strlen(reply), 0);
+                char broadcast[10000];
+                snprintf(broadcast, sizeof(broadcast), "<%s>: %s", username, story_copy);
+
+                for (int i = 0; i < fd_count; i++)
+                {
+                    if (fds[i] != client_fd)
+                    {
+                        send(fds[i], broadcast, strlen(broadcast), 0);
+                    }
+                }
             }
 
             else if(strncasecmp(buffer, "EXIT SESSION", 12) == 0)
