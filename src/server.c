@@ -500,8 +500,8 @@ void *handle_client(void *arg)
                     strncpy(new_client->username, username, sizeof(new_client->username) - 1);
                     new_client->username[sizeof(new_client->username) - 1] = '\0';
 
-                    new_client->next = new_session->clients;
-                    new_session->clients = new_client;
+                    new_client->next = current->clients;
+                    current->clients = new_client;
                 
                     current->participant_count += 1;
                     pthread_mutex_unlock(&current->lock);
