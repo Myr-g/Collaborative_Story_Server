@@ -208,7 +208,7 @@ void *handle_client(void *arg)
 
         else
         {
-            if(strncmp(buffer, "HELP", 4) == 0)
+            if(strncasecmp(buffer, "HELP", 4) == 0)
             {
                 char *reply = "Out of Session:\n"
                 "  JOIN <username>           - Registers your username with the server.\n"
@@ -226,7 +226,7 @@ void *handle_client(void *arg)
                 continue;
             }
 
-            else if(strncmp(buffer, "JOIN ", 5) == 0)
+            else if(strncasecmp(buffer, "JOIN ", 5) == 0)
             {
                 if(username[0] != '\0')
                 {
@@ -235,7 +235,7 @@ void *handle_client(void *arg)
                     send(client_fd, reply, strlen(reply), 0);
                     continue;
                 }
-                
+
                 char name_buffer[64];
                 strncpy(name_buffer, buffer + 5, sizeof(name_buffer) - 1);
                 name_buffer[sizeof(name_buffer)-1] = '\0';
@@ -261,7 +261,7 @@ void *handle_client(void *arg)
                 }
             }
 
-            else if(strncmp(buffer, "SESSION CREATE ", 15) == 0)
+            else if(strncasecmp(buffer, "SESSION CREATE ", 15) == 0)
             {
                 if(current_session != NULL)
                 {
@@ -365,13 +365,13 @@ void *handle_client(void *arg)
                 send(client_fd, reply, strlen(reply), 0);
 
                 char prompt[200];
-                snprintf(prompt, sizeof(prompt), "%s\n", new_session->genre->prompt);
+                snprintf(prompt, sizeof(prompt), "Prompt: %s\n", new_session->genre->prompt);
                 send(client_fd, prompt, strlen(prompt), 0);
 
                 continue;
             }
 
-            else if(strncmp(buffer, "SESSION JOIN ", 13) == 0)
+            else if(strncasecmp(buffer, "SESSION JOIN ", 13) == 0)
             {
                 if(current_session != NULL)
                 {
@@ -416,14 +416,14 @@ void *handle_client(void *arg)
                     send(client_fd, reply, strlen(reply), 0);
 
                     char prompt[200];
-                    snprintf(prompt, sizeof(prompt), "%s\n", current_session->genre->prompt);
+                    snprintf(prompt, sizeof(prompt), "Prompt: %s\n", current_session->genre->prompt);
                     send(client_fd, prompt, strlen(prompt), 0);
 
                     continue;
                 }
             }
 
-            else if(strncmp(buffer, "LIST SESSIONS", 13) == 0)
+            else if(strncasecmp(buffer, "LIST SESSIONS", 13) == 0)
             {
                 if(current_session != NULL)
                 {
@@ -454,7 +454,7 @@ void *handle_client(void *arg)
                 continue;
             }
 
-            else if(strncmp(buffer, "VIEW", 4) == 0)
+            else if(strncasecmp(buffer, "VIEW", 4) == 0)
             {
                 if (current_session == NULL)
                 {
@@ -468,7 +468,7 @@ void *handle_client(void *arg)
                 pthread_mutex_unlock(&current_session->lock);
             }
 
-            else if(strncmp(buffer, "WRITE ", 6) == 0)
+            else if(strncasecmp(buffer, "WRITE ", 6) == 0)
             {
                 if(current_session == NULL)
                 {
@@ -495,7 +495,7 @@ void *handle_client(void *arg)
                 send(client_fd, reply, strlen(reply), 0);
             }
 
-            else if(strncmp(buffer, "EXIT SESSION", 12) == 0)
+            else if(strncasecmp(buffer, "EXIT SESSION", 12) == 0)
             {
                 if(current_session == NULL)
                 {
@@ -518,7 +518,7 @@ void *handle_client(void *arg)
                 }
             }
 
-            else if(strncmp(buffer, "QUIT", 4) == 0)
+            else if(strncasecmp(buffer, "QUIT", 4) == 0)
             {
                 if(current_session != NULL)
                 {
