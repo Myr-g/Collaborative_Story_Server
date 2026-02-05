@@ -28,9 +28,9 @@ gcc -o client src/client/*.c
 JOIN <username>           - Registers your username with the server
 
 
-SESSION CREATE <name> <genre|RANDOM>    - Creates a new collaborative writing session witht the chosen genre
+SESSION CREATE (name) (genre)    - Creates a new collaborative writing session witht the chosen genre
 
-SESSION JOIN <name>       - Joins an existing session
+SESSION JOIN (name)       - Joins an existing session
 
 LIST SESSIONS             - Lists all active sessions
 
