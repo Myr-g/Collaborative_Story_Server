@@ -36,7 +36,6 @@ typedef struct session
 genre_list_t genre_list;
 session_t *sessions_head = NULL;
 pthread_mutex_t sessions_lock = PTHREAD_MUTEX_INITIALIZER;
-srand(time(NULL));
 
 void load_genres()
 {
@@ -380,7 +379,7 @@ void *handle_client(void *arg)
                     send(client_fd, reply, strlen(reply), 0);
                     continue; 
                 }
-                
+
                 char session_name[64];
                 strncpy(session_name, buffer + 13, sizeof(session_name) - 1);
                 session_name[sizeof(session_name)-1] = '\0';
@@ -542,6 +541,7 @@ int main()
     int addrlen = sizeof(address);
     char buffer[BUFFER_SIZE];
 
+    srand(time(NULL));
     load_genres();
 
     // Create socket
