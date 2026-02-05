@@ -228,6 +228,14 @@ void *handle_client(void *arg)
 
             else if(strncmp(buffer, "JOIN ", 5) == 0)
             {
+                if(username[0] != '\0')
+                {
+                    char reply[128];
+                    snprintf(reply, sizeof(reply), "ERROR; You have already joined as %s.\n", username);
+                    send(client_fd, reply, strlen(reply), 0);
+                    continue;
+                }
+                
                 char name_buffer[64];
                 strncpy(name_buffer, buffer + 5, sizeof(name_buffer) - 1);
                 name_buffer[sizeof(name_buffer)-1] = '\0';
@@ -237,14 +245,6 @@ void *handle_client(void *arg)
                 if(name_buffer[0] == '\0')
                 {
                     char *reply = "ERROR; Username cannot be empty.\n";
-                    send(client_fd, reply, strlen(reply), 0);
-                    continue;
-                }
-
-                else if(username[0] != '\0')
-                {
-                    char reply[128];
-                    snprintf(reply, sizeof(reply), "ERROR; You have already joined as %s.\n", username);
                     send(client_fd, reply, strlen(reply), 0);
                     continue;
                 }
@@ -425,6 +425,13 @@ void *handle_client(void *arg)
 
             else if(strncmp(buffer, "LIST SESSIONS", 13) == 0)
             {
+                if(current_session != NULL)
+                {
+                    char *reply = "To view the list of ongoing sessions, please do EXIT SESSION first.\n";
+                    send(client_fd, reply, strlen(reply), 0);
+                    continue;
+                }
+
                 pthread_mutex_lock(&sessions_lock);
 
                 char reply[2048];
@@ -463,15 +470,15 @@ void *handle_client(void *arg)
 
             else if(strncmp(buffer, "WRITE ", 6) == 0)
             {
-                char story_copy[10000] = {0};
-                strcpy(story_copy, buffer + 6);
-
-                if (current_session == NULL)
+                if(current_session == NULL)
                 {
                     char *reply = "ERROR; You are not in a SESSION.\n";
                     send(client_fd, reply, strlen(reply), 0);
                     continue;
                 }
+
+                char story_copy[10000] = {0};
+                strcpy(story_copy, buffer + 6);
 
                 pthread_mutex_lock(&current_session->lock);
                 strcat(current_session->story, story_copy);
