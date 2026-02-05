@@ -211,7 +211,7 @@ void destroy_session(session_t *session)
     free(session);
 }
 
-void remove_session(session_t *target)
+void remove_session(session_t *session)
 {
     pthread_mutex_lock(&sessions_lock);
 
@@ -220,7 +220,7 @@ void remove_session(session_t *target)
 
     while(current)
     {
-        if(current == target)
+        if(current == session)
         {
             if(prev)
             {
@@ -242,6 +242,76 @@ void remove_session(session_t *target)
     }
 
     pthread_mutex_unlock(&sessions_lock);
+}
+
+int add_client_to_session(session_t *session, int fd, const char *username)
+{
+    pthread_mutex_lock(&session->lock);
+
+    session_client_t *new_client = malloc(sizeof(session_client_t));
+
+    if(new_client == NULL)
+    {
+        pthread_mutex_unlock(&session->lock);
+        return -1;
+    }
+
+    new_client->fd = fd;
+    strncpy(new_client->username, username, sizeof(new_client->username) - 1);
+    new_client->username[sizeof(new_client->username) - 1] = '\0';
+
+    new_client->next = session->clients;
+    session->clients = new_client;
+                
+    session->participant_count += 1;
+
+    pthread_mutex_unlock(&session->lock);
+
+    return 0;
+}
+
+int remove_client_from_session(session_t *session, int fd)
+{
+    pthread_mutex_lock(&session->lock);
+
+    session_client_t *curr = session->clients;
+    session_client_t *prev = NULL;
+
+    while(curr != NULL)
+    {
+        if(curr->fd == fd)
+        {
+            break;
+        }
+
+        prev = curr;
+        curr = curr->next;
+    }
+
+    // Client not found
+    if(curr == NULL)
+    {
+        pthread_mutex_unlock(&session->lock);
+        return -1;
+    }
+
+    // Removing the head
+    if(prev == NULL)
+    {
+        session->clients = curr->next;
+    }
+
+    // Removing from middle or end
+    else
+    {
+        prev->next = curr->next;
+    }
+
+    free(curr);
+    session->participant_count -= 1;
+    pthread_mutex_unlock(&session->lock);
+
+    return 0;
 }
 
 void *handle_client(void *arg) 
@@ -413,29 +483,14 @@ void *handle_client(void *arg)
                     continue;
                 }
 
-                pthread_mutex_lock(&new_session->lock);
-
                 current_session = new_session;
-                session_client_t *new_client = malloc(sizeof(session_client_t));
 
-                if (new_client == NULL)
+                if(add_client_to_session(new_session, client_fd, username) < 0)
                 {
-                    pthread_mutex_unlock(&new_session->lock);
                     char *reply = "ERROR; Server memory allocation failed.\n";
                     send(client_fd, reply, strlen(reply), 0);
                     continue;
                 }
-
-                new_client->fd = client_fd;
-                strncpy(new_client->username, username, sizeof(new_client->username) - 1);
-                new_client->username[sizeof(new_client->username) - 1] = '\0';
-
-                new_client->next = new_session->clients;
-                new_session->clients = new_client;
-                
-                new_session->participant_count += 1;
-
-                pthread_mutex_unlock(&new_session->lock);
 
                 char reply[128];
                 snprintf(reply, sizeof(reply), "SESSION CREATED: %s\nGENRE: %s\n", session_name, new_session->genre->name);
@@ -483,28 +538,14 @@ void *handle_client(void *arg)
 
                 else
                 {
-                    pthread_mutex_lock(&current->lock);
                     current_session = current;
 
-                    session_client_t *new_client = malloc(sizeof(session_client_t));
-
-                    if (new_client == NULL)
+                    if(add_client_to_session(current, client_fd, username) < 0)
                     {
-                        pthread_mutex_unlock(&current->lock);
                         char *reply = "ERROR; Server memory allocation failed.\n";
                         send(client_fd, reply, strlen(reply), 0);
                         continue;
                     }
-
-                    new_client->fd = client_fd;
-                    strncpy(new_client->username, username, sizeof(new_client->username) - 1);
-                    new_client->username[sizeof(new_client->username) - 1] = '\0';
-
-                    new_client->next = current->clients;
-                    current->clients = new_client;
-                
-                    current->participant_count += 1;
-                    pthread_mutex_unlock(&current->lock);
 
                     char reply[128];
                     snprintf(reply, sizeof(reply), "JOINED SESSION: '%s'.\nGENRE: %s\n", session_name, current_session->genre->name);
@@ -538,8 +579,6 @@ void *handle_client(void *arg)
                 }
 
                 char reply[2048];
-                reply[0] = '\0';
-
                 session_t *current = sessions_head;
 
                 snprintf(reply, sizeof(reply), "Active Sessions:\n");
@@ -547,7 +586,7 @@ void *handle_client(void *arg)
                 while(current != NULL)
                 {
                     int next_index = strlen(reply);
-                    snprintf(reply + next_index, sizeof(reply) - next_index, "- %s (%d participants)\n", current->name, current->participant_count);
+                    snprintf(reply + next_index, sizeof(reply) - next_index, "- %s (%d participants, Genre: %s)\n", current->name, current->participant_count, current->genre->name);
 
                     current = current->next;
                 }
@@ -629,15 +668,17 @@ void *handle_client(void *arg)
 
                 else
                 {
-                    pthread_mutex_lock(&current_session->lock);
-                    current_session->participant_count -= 1;
-                    int remaining_participants = current_session->participant_count;
-                    pthread_mutex_unlock(&current_session->lock);
+                    if(remove_client_from_session(current_session, client_fd) < 0)
+                    {
+                        char *reply = "Error. Client not found\n";
+                        send(client_fd, reply, strlen(reply), 0);
+                        continue;
+                    }
 
                     session_t *left_session = current_session;
                     current_session = NULL;
 
-                    if(remaining_participants == 0)
+                    if(left_session->participant_count == 0)
                     {
                         remove_session(left_session);
                     }
