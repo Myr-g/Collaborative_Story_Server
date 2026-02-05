@@ -187,9 +187,59 @@ session_t *find_session(const char *name)
     return NULL;
 }
 
+void destroy_session(session_t *session)
+{
+    if(!session)
+    {
+        return;
+    }
+
+    if(session->log_fp)
+    {
+        fclose(session->log_fp);
+    }
+
+    pthread_mutex_destroy(&session->lock);
+    free(session);
+}
+
+void remove_session(session_t *target)
+{
+    pthread_mutex_lock(&sessions_lock);
+
+    session_t *prev = NULL;
+    session_t *current = sessions_head;
+
+    while(current)
+    {
+        if(current == target)
+        {
+            if(prev)
+            {
+                prev->next = current->next;
+            }
+
+            else
+            {
+                sessions_head = current->next;
+            }
+
+            pthread_mutex_unlock(&sessions_lock);
+            destroy_session(current);
+            return;
+        }
+
+        prev = current;
+        current = current->next;
+    }
+
+    pthread_mutex_unlock(&sessions_lock);
+}
+
 void *handle_client(void *arg) 
 {
     int client_fd = *(int*)arg;
+    free(arg);
 
     char username[64] = {0};
     genre_t *selected_genre = NULL;
@@ -434,6 +484,14 @@ void *handle_client(void *arg)
 
                 pthread_mutex_lock(&sessions_lock);
 
+                if(!sessions_head)
+                {
+                    char *reply = "No active sessions.\n";
+                    send(client_fd, reply, strlen(reply), 0);
+                    pthread_mutex_unlock(&sessions_lock);
+                    continue;
+                }
+
                 char reply[2048];
                 reply[0] = '\0';
 
@@ -508,9 +566,16 @@ void *handle_client(void *arg)
                 {
                     pthread_mutex_lock(&current_session->lock);
                     current_session->participant_count -= 1;
+                    int remaining_participants = current_session->participant_count;
                     pthread_mutex_unlock(&current_session->lock);
 
+                    session_t *left_session = current_session;
                     current_session = NULL;
+
+                    if(remaining_participants == 0)
+                    {
+                        remove_session(left_session);
+                    }
 
                     char *reply = "Exiting current SESSION.\n";
                     send(client_fd, reply, strlen(reply), 0);
@@ -524,9 +589,16 @@ void *handle_client(void *arg)
                 {
                     pthread_mutex_lock(&current_session->lock);
                     current_session->participant_count -= 1;
+                    int remaining_participants = current_session->participant_count;
                     pthread_mutex_unlock(&current_session->lock);
 
+                    session_t *left_session = current_session;
                     current_session = NULL;
+
+                    if(remaining_participants == 0)
+                    {
+                        remove_session(left_session);
+                    }
                 }
                 
                 char *reply = "Goodbye.";
