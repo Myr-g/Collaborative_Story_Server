@@ -150,6 +150,7 @@ session_t *create_session(const char *name, genre_t *genre)
     new_session->genre = genre;
     new_session->story[0] = '\0';
     new_session->participant_count = 0;
+    new_session->clients = NULL;
     new_session->log_fp = NULL;
     pthread_mutex_init(&new_session->lock, NULL);
 
@@ -205,6 +206,15 @@ void destroy_session(session_t *session)
     if(session->log_fp)
     {
         fclose(session->log_fp);
+    }
+
+    session_client_t *current = session->clients;
+
+    while(current) 
+    {
+        session_client_t *temp = current;
+        current = current->next;
+        free(temp);
     }
 
     pthread_mutex_destroy(&session->lock);
@@ -620,7 +630,8 @@ void *handle_client(void *arg)
                 }
 
                 char story_copy[10000] = {0};
-                strcpy(story_copy, buffer + 6);
+                strncpy(story_copy, buffer + 6, sizeof(story_copy) - 1);
+                story_copy[sizeof(story_copy) - 1] = '\0';
 
                 int fds[64];
                 int fd_count = 0;
@@ -693,15 +704,17 @@ void *handle_client(void *arg)
             {
                 if(current_session != NULL)
                 {
-                    pthread_mutex_lock(&current_session->lock);
-                    current_session->participant_count -= 1;
-                    int remaining_participants = current_session->participant_count;
-                    pthread_mutex_unlock(&current_session->lock);
+                    if(remove_client_from_session(current_session, client_fd) < 0)
+                    {
+                        char *reply = "Error. Client not found\n";
+                        send(client_fd, reply, strlen(reply), 0);
+                        continue;
+                    }
 
                     session_t *left_session = current_session;
                     current_session = NULL;
 
-                    if(remaining_participants == 0)
+                    if(left_session->participant_count == 0)
                     {
                         remove_session(left_session);
                     }
