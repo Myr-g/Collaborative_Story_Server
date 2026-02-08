@@ -1,19 +1,20 @@
-function generateId(prefix)
+const crypto = require("crypto");
+
+function generateId()
 {
-    let id;
-
-    if(typeof crypto != "undefined" && crypto.getRandomValues)
-    {
-        const array = new Uint8Array(8);
-        crypto.getRandomValues(array);
-
-        id = Array.from(array, byte => (byte % 36).toString(36)).join('');
-    }
-
-    else
-    {
-        id = Math.random().toString(36).slice(2, 10);
-    }
-
-    return prefix + id;
+    const bytes = crypto.getRandomBytes(8);
+    const id = Array.from(bytes, byte => (byte % 36).toString(36)).join('');
+    return id;
 }
+
+function generateUserId()
+{
+    return "usr_" + generateId();
+}
+
+function generateSessionId()
+{
+    return "sess_" + generateId();
+}
+
+module.exports = {generateUserId, generateSessionId};
