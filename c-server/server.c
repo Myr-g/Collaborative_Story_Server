@@ -51,7 +51,7 @@ void load_genres()
     genre_list.capacity = 16;
     genre_list.data = malloc(sizeof(genre_t) * genre_list.capacity);
 
-    FILE *file = fopen("src/genres.txt", "r");
+    FILE *file = fopen("genres.txt", "r");
     if (!file)
     {
         fprintf(stderr, "Error: genres.txt not found.\n");
