@@ -103,3 +103,5 @@ function removeUserFromSession(session_id, user_id)
 
     return true;
 }
+
+module.exports = {createSession, getSessionById, getSessionByName, addUserToSession, removeUserFromSession};
