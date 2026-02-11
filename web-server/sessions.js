@@ -59,6 +59,12 @@ function getSessionByName(session_name)
     }
 }
 
+function getSessions()
+{
+    const sessions_array = Array.from(sessions_by_id, ([id, session]) => ({ ...session }));
+    return sessions_array;
+}
+
 function addUserToSession(session_id, username)
 {
     const session = getSessionById(session_id);
@@ -104,4 +110,4 @@ function removeUserFromSession(session_id, user_id)
     return true;
 }
 
-module.exports = {createSession, getSessionById, getSessionByName, addUserToSession, removeUserFromSession};
+module.exports = {createSession, getSessionById, getSessionByName, getSessions, addUserToSession, removeUserFromSession};
