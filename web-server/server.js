@@ -1,6 +1,6 @@
 const express = require("express");
 const { getGenres } = require("./genres");
-const { createSession, getSessions } = require("./sessions");
+const { createSession, getSessions, getSessionById, addUserToSession, removeUserFromSession } = require("./sessions");
 
 const app = express();
 app.use(express.json());
@@ -16,10 +16,11 @@ app.get('/genres', (req, res) => {
 
 app.get('/sessions', (req, res) => {
     const sessions_list = getSessions();
+    let summarized_sessions = [];
 
     for(let i = 0; i < sessions_list.length; i++)
     {
-        sessions_list[i] = {
+        summarized_sessions[i] = {
             id: sessions_list[i].id,
             name: sessions_list[i].name,
             genre: sessions_list[i].genre,
@@ -28,7 +29,7 @@ app.get('/sessions', (req, res) => {
         }
     }
 
-    res.status(200).json({sessions: sessions_list});
+    res.status(200).json({sessions: summarized_sessions});
 });
 
 app.post('/sessions', (req, res) => {
@@ -77,6 +78,102 @@ app.post('/sessions', (req, res) => {
         name: session.name,
         genre: session.genre,
         createdAt: session.createdAt
+    });
+});
+
+app.post('/sessions/:id/join', (req, res) => {
+    const {id} = req.params;
+    const {username} = req.body;
+
+    if(!getSessionById(id))
+    {
+        res.sendStatus(404);
+        return;
+    }
+
+    if(!username)
+    {
+        res.sendStatus(400);
+        return;
+    }
+
+    const joined = addUserToSession(id, username);
+
+    if(!joined)
+    {
+        res.sendStatus(404);
+        return;
+    }
+
+    res.status(200).json({
+        sessionId: joined.session.id,
+        userId: joined.user.id,
+        username: joined.user.name
+    });
+});
+
+app.post('/sessions/:id/leave', (req, res) => {
+    const {id} = req.params;
+    const {userId} = req.body;
+
+    if(!getSessionById(id))
+    {
+        res.sendStatus(404);
+        return;
+    }
+
+    if(!userId)
+    {
+        res.sendStatus(400);
+        return;
+    }
+
+    if(!removeUserFromSession(id, userId))
+    {
+        res.sendStatus(404);
+        return;
+    }
+
+    res.status(200).json({
+        userId: userId,
+    });
+});
+
+app.post('/sessions/:id/write', (req, res) => {
+    const {id} = req.params;
+    const{userId, text} = req.body;
+
+    const session = getSessionById(id);
+
+    if(!session)
+    {
+        res.sendStatus(404);
+        return;
+    }
+
+    if(!userId)
+    {
+        res.sendStatus(400);
+        return;
+    }
+
+    if(!text)
+    {
+        res.sendStatus(400);
+        return;
+    }
+
+    if(!session.users.has(userId))
+    {
+        res.sendStatus(404);
+        return;
+    }
+
+    session.story += text;
+
+    res.status(200).json({
+        sessionID: id,
+        userId: userId
     });
 });
 
