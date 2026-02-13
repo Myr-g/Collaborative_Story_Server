@@ -1,9 +1,10 @@
 const express = require("express");
 const { getGenres } = require("./genres");
 const { createSession, getSessions, getSessionById, addUserToSession, removeUserFromSession } = require("./sessions");
+const path = require("path");
 
 const app = express();
-app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get("/", (req, res) => {
     res.send("Collaborative Story Server API is running");
@@ -172,9 +173,45 @@ app.post('/sessions/:id/write', (req, res) => {
     session.story += text;
 
     res.status(200).json({
-        sessionID: id,
+        sessionId: id,
         userId: userId
     });
+});
+
+app.get('/sessions/:id', (req, res) => {
+    const {id} = req.params;
+    const {userId} = req.query;
+
+    const session = getSessionById(id);
+
+    if(!session)
+    {
+        res.sendStatus(404);
+        return;
+    }
+
+    if(!userId)
+    {
+        res.sendStatus(400);
+        return;
+    }
+
+    if(!session.users.has(userId))
+    {
+        res.sendStatus(403);
+        return;
+    }
+
+    const response = {
+        sessionId: session.id,
+        name: session.name,
+        genre: session.genre,
+        story: session.story,
+        userCount: session.users.size,
+        createdAt: session.createdAt
+    };
+
+    res.status(200).json(response);
 });
 
 const PORT = 8080;
