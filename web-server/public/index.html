@@ -3,9 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Homepage</title>
+    <title>Welcome</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Homepage</h1>
+    <section>
+        <h1> [Name]</h1>
+        <p>
+            A place where stories find their rhythm—whether you write alone or let your voice intertwine with others, [Name] invites imagination to wander, return, and grow.
+        </p>
+    </section>
+
+    <section>
+        <h2> New Story: </h2>
+        <form>
+            <label for="session_name"> Story Title: </label>
+            <input type="text" id="session_name" name="session_name" required minlength="1" maxlength="64"/>
+            <select name="genre" id="genre_select">
+                <option value=""> --Select a genre--</option>
+            </select>
+            <button type="button">Create</button>
+        </form>
+    </section>
+
+    <section>
+        <h3>Active Sessions</h3>
+        <ul>
+
+        </ul>
+    </section>
+
+    <script src="app.js"></script>
 </body>
 </html>
