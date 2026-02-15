@@ -4,7 +4,8 @@ const { createSession, getSessions, getSessionById, addUserToSession, removeUser
 const path = require("path");
 
 const app = express();
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
+app.use(express.static("public"));
 
 app.get("/", (req, res) => {
     res.send("Collaborative Story Server API is running");
@@ -34,6 +35,8 @@ app.get('/sessions', (req, res) => {
 });
 
 app.post('/sessions', (req, res) => {
+    console.log(req.body);
+
     const {name, genre} = req.body;
     const genre_list = getGenres();
     let chosen_genre = null;
@@ -54,7 +57,7 @@ app.post('/sessions', (req, res) => {
     {
         if(genre.toLowerCase() == genre_list[i].name.toLowerCase())
         {
-            chosen_genre = genre_list[i].name;
+            chosen_genre = genre_list[i];
             break;
         }
     }

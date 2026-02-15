@@ -46,7 +46,7 @@ try
     }
 } 
 
-catch (err) 
+catch(err) 
 {
     console.error(`Error reading file: ${err.message}`);
     process.exit(1);
