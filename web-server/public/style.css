@@ -122,3 +122,15 @@ li {
   outline: none;
   border-color: #444;
 }
+
+#save_status {
+  margin-left: 0.75rem;
+  font-size: 0.9rem;
+  color: #2e7d32;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+#save_status.visible {
+  opacity: 1;
+}

@@ -1,7 +1,12 @@
 const homepage_view = document.getElementById("homepage_view");
 const session_view = document.getElementById("session_view");
 const story_title = document.getElementById("story_title");
+const story_text = document.getElementById("story_editor");
 
+const session_id = localStorage.getItem("sessionId");
+const user_id = localStorage.getItem("userId");
+
+// Populate genre dropdown on homepage
 fetch('/genres')
   .then(res => res.json())
   .then(data => {
@@ -16,6 +21,7 @@ fetch('/genres')
     });
   });
 
+// Session creation
 const username_input = document.getElementById("username");
 const session_name = document.getElementById("session_name");
 const selected_genre = document.getElementById("genre_select");
@@ -28,73 +34,73 @@ create_button.addEventListener("click", async () => {
 
   if(!username || !name || !genre) 
   {
-    console.log("Missing username, session name, or genre.");
+    console.error("Missing username, session name, or genre.");
     return;
   }
 
   try 
   {
-    const create_res = await fetch("/sessions", {
+    const createRes = await fetch("/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, genre })
     });
 
-    if(create_res.status === 400)
+    if(createRes.status === 400)
     {
-      console.error("Invalid session creation request:", create_res.status);
+      console.error("Invalid session creation request:", createRes.status);
       return;
     }
 
-    if(create_res.status === 409)
+    if(createRes.status === 409)
     {
-      console.error("Session name already exists:", create_res.status);
+      console.error("Session name already exists:", createRes.status);
       return;
     }
 
-    if(!create_res.ok) 
+    if(!createRes.ok) 
     {
-      console.error("Unexpected error:", create_res.status);
+      console.error("Unexpected error:", createRes.status);
       return;
     }
 
-    const create_data = await create_res.json();
-    console.log("Session created:", create_data);
+    const createData = await createRes.json();
+    console.log("Session created:", createData);
 
-    const session_id = create_data.id;
+    const sessionId = createData.id;
 
-    const join_res = await fetch(`/sessions/${session_id}/join`, {
+    const joinRes = await fetch(`/sessions/${sessionId}/join`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({username})
     });
 
-    if(join_res.status === 400)
+    if(joinRes.status === 400)
     {
-      console.error("Missing username:", join_res.status);
+      console.error("Missing username:", joinRes.status);
       return;
     }
 
-    if(join_res.status === 404)
+    if(joinRes.status === 404)
     {
-      console.error("Session join failed:", join_res.status);
+      console.error("Session join failed:", joinRes.status);
       return;
     }
 
-    if(!join_res.ok)
+    if(!joinRes.ok)
     {
-      console.error("Unexpected error:", join_res.status);
+      console.error("Unexpected error:", joinRes.status);
       return;
     }
 
-    const join_data = await join_res.json();
+    const joinData = await joinRes.json();
 
-    localStorage.setItem("sessionId", join_data.sessionId);
-    localStorage.setItem("userId", join_data.userId);
-    localStorage.setItem("username", join_data.username);
+    localStorage.setItem("sessionId", joinData.sessionId);
+    localStorage.setItem("userId", joinData.userId);
+    localStorage.setItem("username", joinData.username);
 
-    console.log("Joined session:", join_data);
-    showSession(create_data.name);
+    console.log("Joined session:", joinData);
+    showSession(createData.name);
   } 
   
   catch (err) 
@@ -110,9 +116,69 @@ function showHome()
   session_view.hidden = true;
 }
 
-function showSession(session_name) 
+function showSession(sessionName) 
 {
   homepage_view.hidden = true;
   session_view.hidden = false;
-  story_title.textContent = session_name;
+  story_title.textContent = sessionName;
 }
+
+function showSaveStatus(message, success = true, silent = false)
+{
+  if(silent)
+  {
+    return;
+  }
+
+  save_status.textContent = message;
+  save_status.classList.add("visible");
+
+  if(!success)
+  {
+    save_status.style.color = "red";
+  }
+
+  setTimeout(() => {
+    save_status.classList.remove("visible");
+  }, 1500);
+}
+
+// Checks if user exists & was in a session on page reload
+async function checkStorageOnLoad()
+{
+  const sessionId = localStorage.getItem("sessionId");
+  const userId = localStorage.getItem("userId");
+
+  if(!sessionId || !userId)
+  {
+    showHome();
+    return;
+  }
+
+  try
+  {
+    const res = await fetch(`/sessions/${sessionId}?userId=${userId}`);
+    
+    if(!res.ok)
+    {
+      localStorage.removeItem("sessionId");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("username");
+      showHome();
+      return;
+    }
+
+    const data = await res.json();
+
+    showSession(data.name);
+    story_text.value = data.story;
+  }
+
+  catch(err) 
+  { 
+    console.error("Network error:", err); 
+    showHome(); 
+  }
+}
+
+window.addEventListener("DOMContentLoaded", checkStorageOnLoad);

@@ -41,13 +41,7 @@ app.post('/sessions', (req, res) => {
     const genre_list = getGenres();
     let chosen_genre = null;
 
-    if(!name)
-    {
-        res.sendStatus(400);
-        return;
-    }
-
-    if(!genre)
+    if(!name || !genre)
     {
         res.sendStatus(400);
         return;
@@ -155,13 +149,7 @@ app.post('/sessions/:id/write', (req, res) => {
         return;
     }
 
-    if(!userId)
-    {
-        res.sendStatus(400);
-        return;
-    }
-
-    if(!text)
+    if(!userId || typeof text != "string")
     {
         res.sendStatus(400);
         return;
@@ -173,12 +161,9 @@ app.post('/sessions/:id/write', (req, res) => {
         return;
     }
 
-    session.story += text;
+    session.story = text;
 
-    res.status(200).json({
-        sessionId: id,
-        userId: userId
-    });
+    res.sendStatus(200);
 });
 
 app.get('/sessions/:id', (req, res) => {
