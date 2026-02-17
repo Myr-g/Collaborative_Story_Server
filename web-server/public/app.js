@@ -109,6 +109,83 @@ create_button.addEventListener("click", async () => {
   }
 });
 
+// Save story text to session
+const save_button = document.getElementById("save_story");
+const save_status = document.getElementById("save_status");
+let timer;
+
+// Manual save
+save_button.addEventListener("click", async () => {
+  clearTimeout(timer);
+  saveStory(false);
+});
+
+// Autosave
+story_text.addEventListener("input", async () => {
+  clearTimeout(timer);
+
+  timer = setTimeout(async () => {
+    saveStory(true);
+  }, 1500);
+});
+
+async function saveStory(silent)
+{
+  const sessionId = localStorage.getItem("sessionId");
+  const userId = localStorage.getItem("userId");
+  const text = story_text.value;
+
+  if(!sessionId || !userId)
+  {
+    console.error("Session or user not found.")
+    return;
+  }
+
+  if(!text)
+  {
+    console.error("Story text is empty.");
+    return;
+  }
+
+  try
+  {
+    const res = await fetch(`/sessions/${sessionId}/write`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({userId, text})
+    });
+
+    if(res.status === 400)
+    {
+      console.error("Invalid write request:", res.status);
+      showSaveStatus("Save Failed.", false, silent);
+      return;
+    }
+
+    if(res.status === 404)
+    {
+      console.error("Session not found OR user not in session:", res.status);
+      showSaveStatus("Save Failed.", false, silent);
+      return;
+    }
+
+    if(!res.ok)
+    {
+      console.error("Unexpected error:", res.status);
+      showSaveStatus("Save Failed.", false, silent);
+      return;
+    }
+
+    console.log("Story Updated.");
+    showSaveStatus("Saved ✓", true, silent);
+  }
+
+  catch(err)
+  {
+    console.error("Network error:", err);
+  }
+}
+
 // UI Functions
 function showHome() 
 {
