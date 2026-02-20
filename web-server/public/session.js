@@ -13,10 +13,10 @@ let isDirty = false;
 
 // Exit Session
 exit_button.addEventListener("click", () => {
-    localStorage.removeItem("sessionId");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("username");
-    window.location.href = "/";
+  localStorage.removeItem("sessionId");
+  localStorage.removeItem("userId");
+  localStorage.removeItem("username");
+  window.location.href = "/";
 });
 
 // Save story text to session

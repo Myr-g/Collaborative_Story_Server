@@ -96,8 +96,8 @@ li {
     border-bottom: 1px solid #eee;
 }
 
-#session_view {
-  margin-top: var(--space-lg);
+#sessions_list li {
+  cursor: pointer;
 }
 
 #story_title {

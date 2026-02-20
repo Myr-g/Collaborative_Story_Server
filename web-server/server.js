@@ -11,11 +11,13 @@ app.get("/", (req, res) => {
     res.send("Collaborative Story Server API is running");
 });
 
+// Gets the list of genres
 app.get('/genres', (req, res) => {
     const genre_list = getGenres();
     res.status(200).json({genres: genre_list});
 })
 
+// Gets a list of sessions with simplified information about each
 app.get('/sessions', (req, res) => {
     const sessions_list = getSessions();
     let summarized_sessions = [];
@@ -34,6 +36,44 @@ app.get('/sessions', (req, res) => {
     res.status(200).json({sessions: summarized_sessions});
 });
 
+// Gets info about a specifc session
+app.get('/sessions/:id', (req, res) => {
+    const {id} = req.params;
+    const {userId} = req.query;
+
+    const session = getSessionById(id);
+
+    if(!session)
+    {
+        res.sendStatus(404);
+        return;
+    }
+
+    if(!userId)
+    {
+        res.sendStatus(400);
+        return;
+    }
+
+    if(!session.users.has(userId))
+    {
+        res.sendStatus(403);
+        return;
+    }
+
+    const response = {
+        sessionId: session.id,
+        name: session.name,
+        genre: session.genre,
+        story: session.story,
+        userCount: session.users.size,
+        createdAt: session.createdAt
+    };
+
+    res.status(200).json(response);
+});
+
+// Creates a new session
 app.post('/sessions', (req, res) => {
     console.log(req.body);
 
@@ -79,6 +119,7 @@ app.post('/sessions', (req, res) => {
     });
 });
 
+// Lets a user join an existing session
 app.post('/sessions/:id/join', (req, res) => {
     const {id} = req.params;
     const {username} = req.body;
@@ -110,6 +151,7 @@ app.post('/sessions/:id/join', (req, res) => {
     });
 });
 
+// Lets user leave a session
 app.post('/sessions/:id/leave', (req, res) => {
     const {id} = req.params;
     const {userId} = req.body;
@@ -137,6 +179,7 @@ app.post('/sessions/:id/leave', (req, res) => {
     });
 });
 
+// Allows user to replace or add text to a sessions' story
 app.post('/sessions/:id/write', (req, res) => {
     const {id} = req.params;
     const{userId, text, mode} = req.body;
@@ -178,42 +221,6 @@ app.post('/sessions/:id/write', (req, res) => {
     }
 
     res.sendStatus(200);
-});
-
-app.get('/sessions/:id', (req, res) => {
-    const {id} = req.params;
-    const {userId} = req.query;
-
-    const session = getSessionById(id);
-
-    if(!session)
-    {
-        res.sendStatus(404);
-        return;
-    }
-
-    if(!userId)
-    {
-        res.sendStatus(400);
-        return;
-    }
-
-    if(!session.users.has(userId))
-    {
-        res.sendStatus(403);
-        return;
-    }
-
-    const response = {
-        sessionId: session.id,
-        name: session.name,
-        genre: session.genre,
-        story: session.story,
-        userCount: session.users.size,
-        createdAt: session.createdAt
-    };
-
-    res.status(200).json(response);
 });
 
 const PORT = 8080;
