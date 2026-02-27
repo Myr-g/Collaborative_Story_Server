@@ -13,31 +13,28 @@ let regenerationDisabled = false;
 
 // Prompt Regeneration
 regen_button.addEventListener("click", async () => {
+  generatePrompt("static");
+});
+
+async function generatePrompt(source)
+{
   if(regenerationDisabled)
   {
     return;
   }
 
   regen_button.disabled = true;
-  regen_button.textContent = "Regenerating...";
+  regen_button.textContent = "Generating...";
 
   const sessionId = localStorage.getItem("sessionId");
   const userId = localStorage.getItem("userId");
 
-  if(!sessionId || !userId)
-  {
-    console.error("Session or user not found.")
-    regen_button.disabled = false;
-    regen_button.textContent = "Regenerate";
-    return;
-  }
-
   try
   {
-    const res = await fetch(`/sessions/${sessionId}/regenerate-prompt`, {
+    const res = await fetch(`/sessions/${sessionId}/generate-prompt`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({userId})
+      body: JSON.stringify({ userId, source })
     });
 
     if(res.status === 404)
@@ -73,13 +70,11 @@ regen_button.addEventListener("click", async () => {
     const data = await res.json();
 
     story_prompt.textContent = data.prompt;
-    regen_button.disabled = false;
-    regen_button.textContent = "Regenerate";
   }
 
-  catch(err)
+  catch (err)
   {
-    console.error("Network error:", err);
+    console.error(err);
   }
 
   finally 
@@ -90,7 +85,7 @@ regen_button.addEventListener("click", async () => {
       regen_button.textContent = "Regenerate";
     }
   }
-});
+}
 
 // Exit Session
 exit_button.addEventListener("click", () => {
@@ -101,7 +96,6 @@ exit_button.addEventListener("click", () => {
 });
 
 // Save story text to session
-
 // Manual save
 save_button.addEventListener("click", async () => {
   clearTimeout(timer);
@@ -258,10 +252,19 @@ window.addEventListener("DOMContentLoaded", async() => {
     const data = await res.json();
 
     story_title.textContent = data.name;
-    story_prompt.textContent = data.prompt;
     regenerationDisabled = data.promptLocked;
 
-    if(regenerationDisabled)
+    if(!data.prompt && !regenerationDisabled)
+    {
+      generatePrompt("static");
+    }
+
+    else
+    {
+      story_prompt.textContent = data.prompt;
+    }
+
+    if(regenerationDisabled && regen_button)
     {
       regen_button.disabled = true;
       regen_button.textContent = "Prompt Locked";

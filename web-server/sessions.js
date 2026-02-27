@@ -20,6 +20,7 @@ function createSession(name, genre)
         id: session_id,
         name: display_name,
         genre: genre,
+        promptSource: "",
         prompt: "",
         promptLocked: false,
         story: "",

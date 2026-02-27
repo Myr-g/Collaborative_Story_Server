@@ -65,6 +65,7 @@ app.get('/sessions/:id', (req, res) => {
         sessionId: session.id,
         name: session.name,
         genre: session.genre,
+        promptSource: session.promptSource,
         prompt: session.prompt,
         promptLocked: session.promptLocked,
         story: session.story,
@@ -182,10 +183,10 @@ app.post('/sessions/:id/leave', (req, res) => {
     });
 });
 
-// Allows user to regenerate prompt if and only if prompt regeneration is not locked
-app.post('/sessions/:id/regenerate-prompt', (req, res) => {
+// Generates or replaces the session prompt if and only if prompt generation is not locked
+app.post('/sessions/:id/generate-prompt', (req, res) => {
     const {id} = req.params;
-    const {userId} = req.body;
+    const {userId, source} = req.body;
 
     const session = getSessionById(id);
 
@@ -196,6 +197,12 @@ app.post('/sessions/:id/regenerate-prompt', (req, res) => {
     }
 
     if(!userId)
+    {
+        res.sendStatus(400);
+        return;
+    }
+
+    if(!source || (source !== "none" && source !== "static" && source !== "ai"))
     {
         res.sendStatus(400);
         return;
@@ -215,10 +222,29 @@ app.post('/sessions/:id/regenerate-prompt', (req, res) => {
 
     // new prompt generation
 
+    let prompt = "";
+
+    if(source === "none")
+    {
+        prompt = "";
+    }
+
+    else if(source === "static")
+    {
+        prompt = session.genre.prompt;
+    }
+
+    else if(source === "ai")
+    {
+        // whatever would be needed for ai integration
+    }
+
+    session.promptSource = source;
+    session.prompt = prompt;
     session.lastUpdatedAt = new Date().toISOString();
 
     res.status(200).json({
-        prompt: "",
+        prompt: prompt,
         promptLocked: false,
         lastUpdatedAt: session.lastUpdatedAt
     });
