@@ -1,10 +1,13 @@
 const templates = [
-  `in {location}, {character} discovers {object}.`,
+  `{character} discovers {object} {location}.`,
   `{character} receives {object} with a message that reads: "{message}".`,
   `before {event}, {character} must {goal}.`,
   `{character} and {secondary_character} both want {object}, but {condition}.`,
   `the discovery of {object} results in a rash decision, but {condition}.`,
-  `one day, a {character} discovers {strange_event}.`,
+  `one day, {character} discovers {strange_event}.`,
+  `{character} realizes {condition}.`,
+  `{object} appears {location}.`,
+  `No one {location} notices when {strange_event}.`
 ];
 
 const general_word_banks = {
@@ -52,19 +55,19 @@ const general_word_banks = {
   ],
 
   location: [
-    "an abandoned town",
-    "a quiet village",
-    "a crowded marketplace",
-    "a lonely road",
-    "a forgotten library",
-    "an isolated cabin",
-    "a small coastal town",
-    " narrow alley",
-    "a remote island",
-    "an underground tunnel",
-    "a dusty attic",
-    "an old train station",
-    "a public park"
+    "in an abandoned town",
+    "in a quiet village",
+    "in a crowded marketplace",
+    "on a lonely road",
+    "inside of a forgotten library",
+    "inside of an isolated cabin",
+    "in a small coastal town",
+    "in a narrow alley",
+    "on a remote island",
+    "inside an underground tunnel",
+    "in a dusty attic",
+    "at an old train station",
+    "in a public park"
   ],
 
   event: [
@@ -76,25 +79,37 @@ const general_word_banks = {
     "a citywide blackout",
     "a wedding",
     "a funeral",
-    "an imporant meeting"
+    "an important meeting"
   ],
 
   strange_event: [
     "gravity stops working",
     "everyone forgets the same person",
-    "time rpeats every hour",
+    "time repeats every hour",
     "all reflections disappear"
   ],
 
   message: [
-    "You were not meant to find this.",
-    "Meet me before midnight.",
-    "Trust no one.",
-    "You were right all along.",
-    "Burn this after reading.",
-    "Someone is watching.",
-    "You must leave tonight.",
-    "It begins again."
+    "You were not meant to find this",
+    "Meet me before midnight",
+    "Trust no one",
+    "You were right all along",
+    "Burn this after reading",
+    "Someone is watching",
+    "You must leave tonight",
+    "It begins again"
+  ],
+
+  goal: [
+    "deliver an urgent message",
+    "uncover a hidden truth",
+    "protect a valuable secret",
+    "reach the meeting point",
+    "escape the approaching danger",
+    "meet an unknown contact",
+    "hide from a dangerous pursuer",
+    "decipher a cryptic note",
+    "stop a disastrous event"
   ],
 
   condition: [
@@ -114,3 +129,21 @@ function randomItem(array)
 {
   return array[Math.floor(Math.random() * array.length)];
 }
+
+function generatePrompt()
+{
+  const template = randomItem(templates);
+  
+  return template.replace(/\{(\w+)\}/g, (match, key) => {
+    const word_bank = general_word_banks[key];
+
+    if(!word_bank)
+    {
+      return match;
+    }
+
+    return randomItem(word_bank);
+  });
+}
+
+module.exports = {generatePrompt};
