@@ -5,7 +5,7 @@ const path = require("path");
 
 const app = express();
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.get("/", (req, res) => {
     res.send("Collaborative Story Server API is running");

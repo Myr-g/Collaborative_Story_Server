@@ -6,7 +6,7 @@ const delimiter ='|';
 
 try 
 {
-    const filePath = path.join(__dirname, "genres.txt");
+    const filePath = path.join(__dirname,"..", "genres.txt");
     const data = fs.readFileSync(filePath, "utf8");
 
     const lines = data.split(/\r?\n/);
