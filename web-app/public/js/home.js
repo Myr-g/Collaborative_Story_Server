@@ -1,3 +1,5 @@
+import { getStories, deleteStory, createStory } from "./story_manager.js";
+
 const username_input = document.getElementById("username");
 const session_name = document.getElementById("session_name");
 const selected_genre = document.getElementById("genre_select");
@@ -27,7 +29,7 @@ loadStoriesList();
 
 function loadStoriesList()
 {
-  const stories = window.story_manager.getStories();
+  const stories = getStories();
   const stories_list = document.getElementById("stories_list");
   stories_list.innerHTML = "";
 
@@ -70,7 +72,7 @@ function loadStoriesList()
         event.stopPropagation();
         if(window.confirm("Are you sure?"))
         {
-          window.story_manager.deleteStory(story.id);
+          deleteStory(story.id);
           loadStoriesList();
         }
       })
@@ -204,7 +206,7 @@ create_button.addEventListener("click", async () => {
     prompt: ""              
   };
 
-  const story = window.story_manager.createStory(data);
+  const story = createStory(data);
   localStorage.setItem("storyId", story.id);
   window.location.href = "/writing.html";
 

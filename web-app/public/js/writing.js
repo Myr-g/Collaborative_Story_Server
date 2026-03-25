@@ -1,3 +1,7 @@
+import { getStory, saveStory as saveStorySM } from "./story_manager.js";
+import { formatStoryToTxt } from "./download/txt_export.js";
+import { formatStoryToPdf } from "./download/pdf_export.js";
+
 const page_name = document.getElementById("title");
 const story_title = document.getElementById("story_title");
 const story_prompt = document.getElementById("story_prompt");
@@ -34,7 +38,7 @@ function saveTitle()
     return;
   }
 
-  const story = window.story_manager.getStory(storyId);
+  const story = getStory(storyId);
 
   if(!story)
   {
@@ -52,7 +56,7 @@ function saveTitle()
   story_title.textContent = newTitle;
   page_name.textContent = newTitle;
 
-  window.story_manager.saveStory(story);
+  saveStorySM(story);
 }
 
 // Prompt Regeneration
@@ -98,12 +102,12 @@ async function generatePrompt(source)
 
     // Save prompt into the local story
     const storyId = localStorage.getItem("storyId");
-    const story = window.story_manager.getStory(storyId);
+    const story = getStory(storyId);
 
     if(story) 
     {
       story.prompt = data.prompt;
-      window.story_manager.saveStory(story);
+      saveStorySM(story);
     }
   }
 
@@ -175,7 +179,7 @@ async function saveStory(silent)
     return;
   }
 
-  const story = window.story_manager.getStory(storyId);
+  const story = getStory(storyId);
 
   if(!story)
   {
@@ -189,7 +193,7 @@ async function saveStory(silent)
   {
     story.content = text;
 
-    window.story_manager.saveStory(story);
+    saveStorySM(story);
     console.log("Story Updated");
 
     isDirty = false;
@@ -245,17 +249,17 @@ function showSaveStatus(message, success = true, silent = false)
   }, 1500);
 }
 
-download_button.addEventListener("click", () => {
+download_button.addEventListener("click", async () => {
   const storyId = localStorage.getItem("storyId");
 
-  const story = window.story_manager.getStory(storyId);
+  const story = getStory(storyId);
 
   if(!story)
   {
     return;
   }
 
-  const formattedStory = window.story_manager.formatStoryForDownload(story);
+  const blob = await formatStoryToPdf(story);
 
   let filename = story.title.replace(/[\\\/:*?"<>|]/g, "");
 
@@ -264,12 +268,11 @@ download_button.addEventListener("click", () => {
     filename = "story";
   }
 
-  const blob = new Blob([formattedStory], { type: "text/plain" });
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${filename}.txt`;
+  a.download = `${filename}.pdf`;
   a.click();
 
   setTimeout(() => URL.revokeObjectURL(url), 100);
@@ -291,7 +294,7 @@ window.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  const story = window.story_manager.getStory(storyId);
+  const story = getStory(storyId);
 
   if(!story)
   {

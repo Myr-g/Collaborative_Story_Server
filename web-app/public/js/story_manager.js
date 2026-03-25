@@ -91,9 +91,17 @@ function deleteStory(id)
 
 function formatStoryForDownload(story) 
 {
-  let formattedStory = [];
+  let title = "";
 
-  formattedStory.push(story.title);
+  if(story.title && story.title.trim() !== "")
+  {
+    title = story.title;
+  }
+
+  else
+  {
+    title = "Untitled";
+  }
   
   const metadata = [];
 
@@ -106,20 +114,23 @@ function formatStoryForDownload(story)
   {
     metadata.push(`Prompt: ${story.prompt}`);
   }
-  
-  if(metadata.length > 0)
+
+  let content = [];
+
+  if(story.content && story.content.trim() !== "")
   {
-  	formattedStory.push(metadata.join("\n"));
+    content = story.content.split(/\r?\n/);
   }
-  
-  formattedStory.push("---");
 
-  formattedStory.push(story.content || "");
+  else
+  {
+    content = [""];
+  }
 
-  return formattedStory.join("\n\n");
+  return {title: title, metadata: metadata, content: content};
 }
 
-window.story_manager = {
+export {
     getStories,
     getStory,
     createStory,
