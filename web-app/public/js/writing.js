@@ -11,6 +11,9 @@ const exit_button = document.getElementById("exit_session");
 const save_button = document.getElementById("save_story");
 const save_status = document.getElementById("save_status");
 const download_button = document.getElementById("download_story");
+const download_menu = document.getElementById("download_menu");
+const txt_download_button = document.getElementById("txt_download");
+const pdf_download_button = document.getElementById("pdf_download");
 
 let timer;
 let saving = false;
@@ -249,7 +252,50 @@ function showSaveStatus(message, success = true, silent = false)
   }, 1500);
 }
 
-download_button.addEventListener("click", async () => {
+download_button.addEventListener("click", (event) => {
+  event.stopPropagation();
+
+  const rect = download_button.getBoundingClientRect();
+  download_menu.style.left = rect.left + "px";
+  download_menu.style.top = rect.bottom + "px";
+
+  download_menu.style.display = "block";
+});
+
+txt_download_button.addEventListener("click", (event) => {
+  event.stopPropagation();
+  
+  const storyId = localStorage.getItem("storyId");
+
+  const story = getStory(storyId);
+
+  if(!story)
+  {
+    return;
+  }
+
+  const blob = formatStoryToTxt(story);
+
+  let filename = story.title.replace(/[\\\/:*?"<>|]/g, "");
+
+  if(!filename)
+  {
+    filename = "story";
+  }
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${filename}.txt`;
+  a.click();
+
+  setTimeout(() => URL.revokeObjectURL(url), 100);
+});
+
+pdf_download_button.addEventListener("click", async (event) => {
+  event.stopPropagation();
+  
   const storyId = localStorage.getItem("storyId");
 
   const story = getStory(storyId);
@@ -277,6 +323,14 @@ download_button.addEventListener("click", async () => {
 
   setTimeout(() => URL.revokeObjectURL(url), 100);
 });
+
+document.addEventListener("click", (event) => {
+  if (!download_menu.contains(event.target) && event.target !== download_button) 
+  {
+    download_menu.style.display = "none";
+  }
+});
+
 
 window.addEventListener("beforeunload", (e) => {
   if (!isDirty) return;
