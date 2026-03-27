@@ -11,20 +11,52 @@
         <section>
             <h1> [Name]</h1>
             <p>A place where stories find their rhythm—whether you write alone or let your voice intertwine with others, [Name] invites imagination to wander, return, and grow.</p>
-            <label for="username"> Username: </label>
-            <input type="text" id="username" name="username" required minlength="1" maxlength="64"/>
         </section>
 
         <section>
             <h2>New Story</h2>
-            <form>
-                <label for="session_name"> Story Title: </label>
-                <input type="text" id="session_name" name="session_name" required minlength="1" maxlength="64"/>
-                <select name="genre" id="genre_select">
-                    <option value=""> --Select a genre--</option>
-                </select>
-                <button type="button" id="create_session">Create</button>
-            </form>
+            <button id="new_story">+ New Story</button>
+
+            <div id="new_story_panel" class="new_story_panel" hidden>
+
+                <div id="new_story_panel_content">
+
+                    <div class="field">
+                        <label for="story_title">Title</label>
+                        <input type="text" id="story_title" value="Untitled" maxlength="64"/>
+                    </div>
+
+                    <div class="field">
+                        <label for="story_type_group">Mode</label>
+                        <div class="story_type_group">
+                            <button class="story_type active" id="solo_story">Solo</button>
+                            <button class="story_type" id="collaborative_story">Collaborative</button>
+                        </div>
+                        <label id="username_label" for="username" hidden>Username</label>
+                        <input type="text" id="username" name="username" required minlength="1" maxlength="64" hidden/>
+                    </div>
+
+                    <div class="field">
+                        <label for="genre_select">Genre</label>
+                        <select id="genre_select">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="prompt_type">Prompt</label>
+                        <select id="prompt_type">
+                            <option value="none">None</option>
+                            <option value="template">Template</option>
+                        </select>
+                    </div>
+
+                    <div class="actions">
+                        <button id="cancel_new_story">Cancel</button>
+                        <button id="create_new_story">Create</button>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <section>

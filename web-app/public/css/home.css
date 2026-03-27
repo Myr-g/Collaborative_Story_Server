@@ -160,6 +160,112 @@ button:active {
   background-color: #333;
 }
 
+/* ---------- New Story Panel ---------- */
+.new_story_panel {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.15);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 2000;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.new_story_panel:not([hidden]) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#new_story_panel_content {
+  background: var(--bg-paper);
+  color: var(--text-main);
+
+  padding: 1.5rem;
+  border-radius: 12px;
+
+  width: 100%;
+  max-width: 420px;
+
+  box-shadow: var(--shadow-soft);
+
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  transform: translateY(10px) scale(0.98);
+  transition: transform 0.15s ease;
+}
+
+.new_story_panel:not([hidden]) #new_story_panel_content {
+  transform: translateY(0) scale(1);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.story_type_group {
+    display: flex;
+    width: fit-content;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.story_type {
+    padding: 6px 14px;
+    border: none;
+    background: transparent;
+    color: #333;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.story_type:not(:last-child) {
+    border-right: 1px solid var(--border-subtle);
+}
+
+.story_type.active {
+    background: var(--bg-accent, #333);
+    color: white;
+}
+
+.story_type:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+#username_label {
+    margin-top: 6px;
+}
+
+#username {
+    padding: 6px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+#create_new_story, #cancel_new_story {
+  font-weight: 600;
+}
+
+#cancel_new_story {
+  margin-right: auto;
+}
+
 /* ---------- Sessions list ---------- */
 ul {
   list-style: none;

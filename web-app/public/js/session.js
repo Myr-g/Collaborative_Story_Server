@@ -1,3 +1,7 @@
+import { formatStoryToTxt } from "./download/txt_export.js";
+import { formatStoryToPdf } from "./download/pdf_export.js";
+
+const page_name = document.getElementById("title");
 const story_title = document.getElementById("story_title");
 const story_prompt = document.getElementById("story_prompt");
 const story_text = document.getElementById("story_editor");
@@ -5,6 +9,10 @@ const regen_button = document.getElementById("regenerate_prompt");
 const exit_button = document.getElementById("exit_session");
 const save_button = document.getElementById("save_story");
 const save_status = document.getElementById("save_status");
+const download_button = document.getElementById("download_story");
+const download_menu = document.getElementById("download_menu");
+const txt_download_button = document.getElementById("txt_download");
+const pdf_download_button = document.getElementById("pdf_download");
 
 let timer;
 let saving = false;
@@ -55,7 +63,7 @@ function saveTitle()
 
 // Prompt Regeneration
 regen_button.addEventListener("click", async () => {
-  generatePrompt("static");
+  generatePrompt("template");
 });
 
 async function generatePrompt(source)
@@ -69,50 +77,31 @@ async function generatePrompt(source)
   const icon = regen_button.querySelector('svg')
   icon.classList.add('spin');
 
-  const sessionId = localStorage.getItem("sessionId");
-  const userId = localStorage.getItem("userId");
-
   try
   {
-    const res = await fetch(`/sessions/${sessionId}/generate-prompt`, {
+    const res = await fetch(`/prompts/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, source })
+      body: JSON.stringify({source})
     });
 
-    if(res.status === 404)
+    if(!res.ok) 
     {
-      console.error("Session not found OR user not in session:", res.status);
+      console.error("Prompt generation failed:", res.status);
       regen_button.disabled = false;
-      regen_button.textContent = "Regenerate";
-      return;
-    }
-
-    if(res.status === 400)
-    {
-      console.error("Invalid prompt regeneration request:", res.status);
-      regen_button.disabled = false;
-      regen_button.textContent = "Regenerate";
-      return;
-    }
-
-    if(res.status === 409)
-    {
-      console.log("promptLocked is true; prompt regeneration has been disabled.");
-      regen_button.textContent = "Prompt Locked";
-      regenerationDisabled = true;
-      return;
-    }
-
-    if(!res.ok)
-    {
-      console.error("Unexpected error:", res.status);
+      regen_button.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 2v6h-6"/>
+        <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+        <path d="M3 22v-6h6"/>
+        <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+      </svg>`;
       return;
     }
 
     const data = await res.json();
-
     story_prompt.textContent = data.prompt;
+    saveStory();
   }
 
   catch (err)
@@ -163,6 +152,7 @@ exit_button.addEventListener("click", async () => {
     }
 
     localStorage.removeItem("sessionId");
+    localStorage.removeItem("userId");
     window.location.href = "/";
   } 
   
@@ -335,7 +325,7 @@ window.addEventListener("DOMContentLoaded", async() => {
 
     if(!data.prompt && !regenerationDisabled)
     {
-      generatePrompt("static");
+      generatePrompt("template");
     }
 
     else

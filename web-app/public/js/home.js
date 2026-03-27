@@ -1,14 +1,69 @@
 import { getStories, deleteStory, createStory } from "./story_manager.js";
 
-const username_input = document.getElementById("username");
-const session_name = document.getElementById("session_name");
-const selected_genre = document.getElementById("genre_select");
-const create_button = document.getElementById("create_session");
-
-const session_id = localStorage.getItem("sessionId");
-const user_id = localStorage.getItem("userId");
-
 let joining = false;
+
+const new_story_panel_toggle = document.getElementById("new_story");
+const new_story_panel = document.getElementById("new_story_panel");
+
+const story_title = document.getElementById("story_title");
+const solo_button = document.getElementById("solo_story");
+const collaborative_button = document.getElementById("collaborative_story");
+const username_label = document.getElementById("username_label");
+const username_input = document.getElementById("username");
+const selected_genre = document.getElementById("genre_select");
+const prompt_type = document.getElementById("prompt_type");
+const cancel_button = document.getElementById("cancel_new_story");
+const create_button = document.getElementById("create_new_story");
+
+let story_type = "solo";
+
+new_story_panel_toggle.addEventListener("click", () => {
+  new_story_panel.hidden = false;
+  story_title.focus();
+  story_title.select();
+});
+
+new_story_panel.addEventListener("click", (event) => {
+  event.stopPropagation();
+});
+
+// Close panel if user clicks outside of it
+document.addEventListener("click", (event) => {
+  if(!new_story_panel.contains(event.target) && event.target !== new_story_panel_toggle) 
+  {
+    new_story_panel.hidden = true;
+  }
+});
+
+// Close panel on esc key press
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    new_story_panel.hidden = true;
+  }
+});
+
+solo_button.addEventListener("click", () => {
+  story_type = "solo";
+  solo_button.classList.add("active");
+  collaborative_button.classList.remove("active");
+  username_label.hidden = true;
+  username_input.hidden = true;
+});
+
+collaborative_button.addEventListener("click", () => {
+  story_type = "collaborative";
+  collaborative_button.classList.add("active");
+  solo_button.classList.remove("active");
+  username_label.hidden = false;
+  username_input.hidden = false
+  username_input.focus();
+  
+  if(localStorage.getItem("username"))
+  {
+    username_input.value = localStorage.getItem("username");
+  }
+});
+
 
 // Populate genre dropdown
 fetch('/genres')
@@ -189,102 +244,124 @@ async function loadSessionsList()
 
 // Session creation
 create_button.addEventListener("click", async () => {
-  const username = username_input.value.trim();
-  const name = session_name.value.trim();
+  let title = story_title.value.trim();
   const genre = selected_genre.value;
 
-  if(!username || !name || !genre) 
+  if(story_type === "solo")
   {
-    console.error("Missing username, session name, or genre.");
-    return;
+    if(!title)
+    {
+      title = "Untitled";
+    }
+
+    const data = {
+      title: title,
+      genre: genre,
+      promptType: prompt_type.value, 
+      prompt: ""              
+    };
+
+    const story = createStory(data);
+    localStorage.setItem("storyId", story.id);
+    window.location.href = "/writing.html";
   }
 
-  const data = {
-    title: name,
-    genre: genre,
-    promptType: "template", 
-    prompt: ""              
-  };
-
-  const story = createStory(data);
-  localStorage.setItem("storyId", story.id);
-  window.location.href = "/writing.html";
-
-  /*
-  try 
+  else
   {
-    const createRes = await fetch("/sessions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, genre })
-    });
-
-    if(createRes.status === 400)
+    try 
     {
-      console.error("Invalid session creation request:", createRes.status);
-      return;
-    }
+      const username = username_input.value.trim();
 
-    if(createRes.status === 409)
-    {
-      console.error("Session name already exists:", createRes.status);
-      return;
-    }
+      if(!username)
+      {
+        console.error("Missing username");
+        return;
+      }
 
-    if(!createRes.ok) 
-    {
-      console.error("Unexpected error:", createRes.status);
-      return;
-    }
+      if(!title)
+      {
+        title = "Untitled";
+      }
+      
+      const name = title;
 
-    const createData = await createRes.json();
-    console.log("Session created:", createData);
+      const createRes = await fetch("/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, genre })
+      });
 
-    const sessionId = createData.id;
+      if(createRes.status === 400)
+      {
+        console.error("Invalid session creation request:", createRes.status);
+        return;
+      }
 
-    joining = true;
+      if(createRes.status === 409)
+      {
+        console.error("Session name already exists:", createRes.status);
+        return;
+      }
 
-    const joinRes = await fetch(`/sessions/${sessionId}/join`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({username})
-    });
+      if(!createRes.ok) 
+      {
+        console.error("Unexpected error:", createRes.status);
+        return;
+      }
 
-    if(joinRes.status === 400)
-    {
-      console.error("Missing username:", joinRes.status);
-      return;
-    }
+      const createData = await createRes.json();
+      console.log("Session created:", createData);
 
-    if(joinRes.status === 404)
-    {
-      console.error("Session join failed:", joinRes.status);
-      return;
-    }
+      const sessionId = createData.id;
 
-    if(!joinRes.ok)
-    {
-      console.error("Unexpected error:", joinRes.status);
-      return;
-    }
+      joining = true;
 
-    const joinData = await joinRes.json();
+      const joinRes = await fetch(`/sessions/${sessionId}/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({username})
+      });
 
-    localStorage.setItem("sessionId", joinData.sessionId);
-    localStorage.setItem("userId", joinData.userId);
-    localStorage.setItem("username", joinData.username);
+      if(joinRes.status === 400)
+      {
+        console.error("Missing username:", joinRes.status);
+        return;
+      }
 
-    console.log("Joined session:", joinData);
-    window.location.href = "/session.html";
-  } 
+      if(joinRes.status === 404)
+      {
+        console.error("Session join failed:", joinRes.status);
+        return;
+      }
+
+      if(!joinRes.ok)
+      {
+        console.error("Unexpected error:", joinRes.status);
+        return;
+      }
+
+      const joinData = await joinRes.json();
+
+      localStorage.setItem("sessionId", joinData.sessionId);
+      localStorage.setItem("userId", joinData.userId);
+      localStorage.setItem("username", joinData.username);
+
+      console.log("Joined session:", joinData);
+      window.location.href = "/session.html";
+    } 
   
-  catch (err) 
-  {
-    console.error("Network error:", err);
-  }
+    catch (err) 
+    {
+      console.error("Network error:", err);
+    }
 
-  finally
-  {
-    joining = false;
-  }*/
+    finally
+    {
+      joining = false;
+    }
+  }
+});
+
+cancel_button.addEventListener("click", () => {
+  new_story_panel.hidden = true;
 });
