@@ -15,10 +15,11 @@ const download_menu = document.getElementById("download_menu");
 const txt_download_button = document.getElementById("txt_download");
 const pdf_download_button = document.getElementById("pdf_download");
 
+let regenerationDisabled = false;
+let isExiting = false;
 let timer;
 let saving = false;
 let isDirty = false;
-let regenerationDisabled = false;
 
 // Editing & saving story title
 story_title.addEventListener("blur", saveTitle);
@@ -141,8 +142,21 @@ async function generatePrompt(source)
 
 // Exit
 exit_button.addEventListener("click", async () => {
+  if(isDirty)
+  {
+    const ok = confirm("You have unsaved changes. Leave anyway?");
+
+    if(!ok)
+    {
+      return;
+    }
+  }
+
+  isExiting = true;
+
   localStorage.removeItem("storyId");
   window.location.href = "/";
+  isExiting = false;
 });
 
 // Manual save
@@ -335,7 +349,15 @@ document.addEventListener("click", (event) => {
 
 
 window.addEventListener("beforeunload", (e) => {
-  if (!isDirty) return;
+  if(isExiting)
+  {
+    return;
+  }
+  
+  if(!isDirty)
+  {
+    return;
+  }
 
   e.preventDefault();
   e.returnValue = "";

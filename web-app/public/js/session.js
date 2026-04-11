@@ -14,10 +14,12 @@ const download_menu = document.getElementById("download_menu");
 const txt_download_button = document.getElementById("txt_download");
 const pdf_download_button = document.getElementById("pdf_download");
 
+let regenerationDisabled = false;
+let isExiting = false;
 let timer;
 let saving = false;
 let isDirty = false;
-let regenerationDisabled = false;
+
 
 // Editing & saving story title
 story_title.addEventListener("blur", saveTitle);
@@ -122,7 +124,18 @@ async function generatePrompt(source)
 
 // Exit Session
 exit_button.addEventListener("click", async () => {
+  if(isDirty)
+  {
+    const ok = confirm("You have unsaved changes. Leave anyway?");
 
+    if(!ok)
+    {
+      return;
+    }
+  }
+
+  isExiting = true;
+  
   const sessionId = localStorage.getItem("sessionId");
   const userId = localStorage.getItem("userId");
 
@@ -155,11 +168,13 @@ exit_button.addEventListener("click", async () => {
     localStorage.removeItem("sessionId");
     localStorage.removeItem("userId");
     window.location.href = "/";
+    isExiting = false;
   } 
   
   catch(err) 
   {
     console.error("Network error:", err);
+    isExiting = false;
   }
 });
 
@@ -290,7 +305,15 @@ function showSaveStatus(message, success = true, silent = false)
 }
 
 window.addEventListener("beforeunload", (e) => {
-  if (!isDirty) return;
+  if(isExiting)
+  {
+    return;
+  }
+  
+  if(!isDirty)
+  {
+    return;
+  }
 
   e.preventDefault();
   e.returnValue = "";

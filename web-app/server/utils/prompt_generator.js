@@ -187,7 +187,7 @@ const genre_specific_word_banks = {
     override: {
       strange_event: [
         "the lights start flickering in a constant rhythm",
-        "the wind stops all at once",
+        "the wind comes to a still",
         "shadows linger around longer than their owners"
       ]
     }
@@ -201,7 +201,10 @@ const challenge_rules = [
   "use an unreliable narrator",
   "make the ending recontextualize the entire story",
   "focus on atmosphere over action",
-  "imply conflict without directly stating it"
+  "imply conflict without directly stating it",
+  "write the story as a jorunal entry",
+  "do not name any characters",
+  "end the story with an unanswered question"
 ]
 
 function randomItem(array) 
@@ -241,14 +244,14 @@ function generatePrompt(genre)
 
 function generateChallengePrompt(genre)
 {
-  let subject = Math.random() < 0.5 ? "{character}" : "{object}";
+  let subject = Math.random() < 0.5 ? "{character_adj} {character}" : "{object}";
   let tension = Math.random() < 0.5 ? "{condition}" : "{strange_event}";
   const challenge_rule = randomItem(challenge_rules);
 
   const template = `Write a short story or scene that:
   - includes ${subject}
   - takes place {location}
-  - involves ${tension}
+  - includes an element where ${tension}
   - rule: ${challenge_rule}`;
 
   return template.replace(/\{(\w+)\}/g, (match, key) => {
