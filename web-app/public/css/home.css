@@ -210,11 +210,11 @@ button:active {
     background: rgba(0, 0, 0, 0.05);
 }
 
-#username_label {
+#username_label, #join_username_label {
     margin-top: 6px;
 }
 
-#username {
+#username, #join_username {
     padding: 6px;
     border: 1px solid var(--border-subtle);
     border-radius: 6px;
@@ -297,6 +297,80 @@ ul {
 
 .session-item:focus {
   outline: 2px solid #ccc;
+}
+
+/* Join Panel */
+.join_panel {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.15);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 2000;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.join_panel:not([hidden]) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#join_panel_content {
+  background: var(--bg-paper);
+  color: var(--text-main);
+
+  padding: 1.5rem;
+  border-radius: 12px;
+
+  width: 100%;
+  max-width: 420px;
+
+  box-shadow: var(--shadow-soft);
+
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  transform: translateY(10px) scale(0.98);
+  transition: transform 0.15s ease;
+}
+
+.join_panel:not([hidden]) #join_panel_content {
+  transform: translateY(0) scale(1);
+}
+
+#cancel_join, #confirm_join {
+  font-weight: 600;
+}
+
+#cancel_join {
+  margin-right: auto;
+}
+
+#theme_toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+
+  padding: 6px 12px;
+  border-radius: 6px;
+
+  background: var(--bg-paper);
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+
+  cursor: pointer;
+  z-index: 3000;
+}
+
+#theme_toggle:hover {
+  background: rgba(0,0,0,0.05);
 }
 
 /* ---- Dark Mode ---- */

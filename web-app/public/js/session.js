@@ -295,7 +295,6 @@ async function saveStory(silent)
     {
       regenerationDisabled = true;
       regen_button.disabled = true;
-      regen_button.textContent = "Prompt Locked";
     }
   }
 

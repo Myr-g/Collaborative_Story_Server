@@ -255,3 +255,24 @@ button:disabled {
 #save_status.visible {
   opacity: 1;
 }
+
+#theme_toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  font-size: 1rem;
+
+  padding: 6px 12px;
+  border-radius: 6px;
+
+  background: var(--bg-paper);
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+
+  cursor: pointer;
+  z-index: 3000;
+}
+
+#theme_toggle:hover {
+  background: rgba(0,0,0,0.05);
+}
